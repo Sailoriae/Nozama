@@ -72,6 +72,8 @@ table = {k: '&{};'.format(v) for k, v in htmllib.entities.codepoint2name.items()
 
 # Source : https://stackoverflow.com/questions/38009787/how-to-extract-meta-description-from-urls-using-python
 def get_page_desc ( URL ) :
+    if URL == "" :
+        return ""
     response = requests.get(URL)
     soup = BeautifulSoup(response.text, features="html.parser")
     metas = soup.find_all('meta')
@@ -96,7 +98,10 @@ for cat in alternatives :
     
     for alt in cat[1] :
         temp = template_alt.replace( "{NOM_ALTERNATIVE}", alt[0] )
-        temp = temp.replace( "{URL_ALTERNATIVE}", alt[1] )
+        if alt[1] != "" :
+            temp = temp.replace( "{URL_ALTERNATIVE}", alt[1] )
+        else :
+            temp = temp.replace( "<a href=\"{URL_ALTERNATIVE}\" target=\"_blank\">", "" ).replace( "</a>", "" )
         temp = temp.replace( "{DESCRIPTION_ALTERNATIVE}", alt[3] )
         temp = temp.replace( "{DESCRIPTION_SUR_LEUR_PAGE}", get_page_desc( alt[1] ) )
         html_cat += temp
