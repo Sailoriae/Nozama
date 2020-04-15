@@ -11,9 +11,11 @@ Un site consiste en une ligne dans le fichier `base_de_données.csv`. Cette lign
 - Code (ou "identifiant") de la catégorie du site,
 - Description courte, précisant notamment à quel entreprise appartient le site et son pays d'origine s'il n'est pas français.
 
-Le code (ou "identifiant") d'une catégorie est tout simplement le numéro de la ligne de la catégorie dans le fichier `catégories.csv`. Si il n'y a pas de catégorie correspondante à un nouveau site, elle doit être ajoutée.
+Le code (ou "identifiant") d'une catégorie est sur la première colonne du fichier `catégories.csv`. Si il n'y a pas de catégorie correspondante à un nouveau site, elle doit être ajoutée.
 
 Attention : Un site ne peut avoir qu'une seule catégorie !
+
+Note : Les catégories s'affichent dans l'ordre du fichier `catégories.csv`. Et dans chaque catégorie, les sites s'affichent dans l'ordre du fichier `base_de_données.csv`.
 
 
 Pour qu'un site soit ajouté à l'index, il faut de préférence qu'il soit français, et ait un minimum d'éthique. Ces prérequis paraissent super vagues, mais évitons de poluer cet index avec des alternatives tout aussi critiquables qu'Amazon. Donc exit AliExpress !

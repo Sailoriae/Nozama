@@ -5,12 +5,12 @@ ETAPE 1 : Construire notre BDD des alternatives à partir du CSV
 """
 # Tableau contenant la liste des alternatives, rangées par catégories
 # - tab : Catégorie
-#   - string : Code de la catégorie
+#   - string : ID de la catégorie
 #   - tab : Liste d'alternatives
 #     - tab : Alternative
 #       - string : Nom
 #       - string : URL
-#       - string : Code catégorie, DOIT CORRESPONDRE AU NUMERO DE LIGNE DANS "catégories.csv"
+#       - string : ID de la catégorie (Oui, c'est redondant)
 #       - string : Description
 #     ...
 # ...
@@ -18,9 +18,9 @@ alternatives = []
 
 # Est ce que la catégorie existe déjà ?
 # Si oui, retourne son index dans le tableau "alternatives"
-def cat_existe ( codeCategorie ) :
+def cat_existe ( idCategorie ) :
     for i in range( len(alternatives) ) :
-        if alternatives[i][0] == codeCategorie :
+        if alternatives[i][0] == idCategorie :
             return i
     return None
 
@@ -37,6 +37,12 @@ for ligne in bdd :
     else : # Sinon, on la crée
         alternatives.append( [ ligne[2], [ ligne ] ] )
 
+# Obtenir la catégorie dans le tableau "alternatives"
+def obtenir_cat ( idCategorie ) :
+    for cat in alternatives :
+        if cat[0] == idCategorie :
+         return cat
+
 
 """
 ETAPE 2 : Construire notre liste des alternatives
@@ -46,7 +52,12 @@ categories = fichier.readlines()
 fichier.close()
 
 for i in range(len(categories)) :
-    categories[i] = categories[i].replace( "\n", "" )
+    categories[i] = categories[i].replace( "\n", "" ).split(';')
+
+def obtenir_nom_cat ( idCategorie ) :
+    for cat in categories :
+        if cat[0] == idCategorie :
+            return cat[1]
 
 
 """
@@ -55,7 +66,7 @@ ETAPE 3 : Construire le "menu"
 menu = ""
 
 for i in range(len(alternatives)) :
-    menu += "<a href=\"#cat-" + alternatives[i][0] + "\">" + categories[ int(alternatives[i][0]) - 1 ] + "</a>"
+    menu += "<a href=\"#cat-" + alternatives[i][0] + "\">" + obtenir_nom_cat( alternatives[i][0] ) + "</a>"
     if i < len(alternatives) - 1 :
         menu += " &bull; "
 
@@ -93,7 +104,11 @@ fichier.close()
 
 html = ""
 
-for cat in alternatives :
+for categorie in categories : # Pour afficher dans l'ordre donné dans "catégories.csv"
+    cat = obtenir_cat( categorie[0] )
+    if cat == None : # C'est que la catégorie n'est pas utilisée
+        continue
+    
     html_cat = ""
     
     for alt in cat[1] :
@@ -106,7 +121,7 @@ for cat in alternatives :
         temp = temp.replace( "{DESCRIPTION_SUR_LEUR_PAGE}", get_page_desc( alt[1] ) )
         html_cat += temp
         
-    temp = template_cat.replace( "{CATEGORIE}", categories[ int(cat[0]) - 1 ] )
+    temp = template_cat.replace( "{CATEGORIE}", obtenir_nom_cat( cat[0] ) )
     temp = temp.replace( "{ID_CATEGORIE}", "cat-" + cat[0] )
     temp = temp.replace( "{INSERER_ICI_LES_ALTERNATIVES}", html_cat )
     
