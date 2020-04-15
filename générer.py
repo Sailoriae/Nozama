@@ -1,63 +1,106 @@
 #coding: utf-8
 
 """
-ETAPE 1 : Construire notre BDD des alternatives à partir du CSV
+ETAPE 1 : Définition des objets
 """
-# Tableau contenant la liste des alternatives, rangées par catégories
-# - tab : Catégorie
-#   - string : ID de la catégorie
-#   - tab : Liste d'alternatives
-#     - tab : Alternative
-#       - string : Nom
-#       - string : URL
-#       - string : ID de la catégorie (Oui, c'est redondant)
-#       - string : Description
-#     ...
-# ...
-alternatives = []
 
-# Est ce que la catégorie existe déjà ?
-# Si oui, retourne son index dans le tableau "alternatives"
-def cat_existe ( idCategorie ) :
-    for i in range( len(alternatives) ) :
-        if alternatives[i][0] == idCategorie :
-            return i
-    return None
+# Objet représentant une alternative à Amazon
+class Alternative :
+    def __init__ ( self, nom, URL, ID_cat, desc ) :
+        self.nom = nom
+        self.URL = URL
+        self.ID_cat = ID_cat
+        self.desc = desc
 
-fichier = open( "base_de_données.csv" )
-bdd = fichier.readlines()
-fichier.close()
 
-for ligne in bdd :
-    ligne = ligne.replace("\n", "").split(';')
-    indexCat = cat_existe( ligne[2] )
+# Objet représentant une catégorie, qui contient un tableau d'objets Alternative
+class Categorie :
+    def __init__ ( self, nom, ID ) :
+        self.nom = nom
+        self.ID = ID
+        self.alternatives = [] # Tableau contenant des objets Alternative
     
-    if indexCat != None : # Si la catégorie existe déjà
-        alternatives[indexCat][1].append( ligne )
-    else : # Sinon, on la crée
-        alternatives.append( [ ligne[2], [ ligne ] ] )
+    def add_alternative ( self, alternative ) :
+        self.alternatives.append( alternative )
 
-# Obtenir la catégorie dans le tableau "alternatives"
-def obtenir_cat ( idCategorie ) :
-    for cat in alternatives :
-        if cat[0] == idCategorie :
-         return cat
+
+# Objet général
+# Contient deux tableaux intéressants :
+# - tableau : Tableau d'objets Catégories, construit à partie de "base_de_données.csv"
+# - categories : Tableau de correspondance entre le nom des catégories et leur ID, construit à partie de "catégories.csv"
+#                Sert pour construire le premier tableau, ainsi qu'à l'ordre de placement des catégories lors de la construction du HTML (ETAPE 3)
+class Alternatives :
+    def __init__ ( self ) :
+        self.tableau = [] # Tableau d'objets Catégorie
+        
+        # Permet de trouver les noms des catégories
+        fichier = open( "catégories.csv" )
+        self.categories = fichier.readlines()
+        fichier.close()
+        
+        for i in range(len(self.categories)) :
+            self.categories[i] = self.categories[i].replace( "\n", "" ).split(';')
+        
+        # On remplie notre tableau d'alternatives
+        fichier = open( "base_de_données.csv" )
+        bdd = fichier.readlines()
+        fichier.close()
+        
+        for ligne in bdd :
+            ligne = ligne.replace("\n", "").split(';')
+            self.ajouter_alternative( Alternative( ligne[0], ligne[1], ligne[2], ligne[3] ) )
+    
+    def obtenir_nom_cat ( self, id_categorie ) :
+        for cat in self.categories :
+            if cat[0] == id_categorie :
+                return cat[1]
+    
+    """
+    Est ce que la catégorie existe déjà ?
+    @return Si oui, retourne son index dans self.tableau
+    @param id_categorie String étant l'ID de la catégorie
+    """
+    def cat_existe ( self, id_categorie ) :
+        for i in range( len( self.tableau ) ) :
+            if self.tableau[i].ID == id_categorie :
+                return i
+        return None
+    
+    """
+    @param nom String
+    @param ID String
+    @return Son index dans self.tableau
+    """
+    def ajouter_categorie( self, nom, ID ) :
+        self.tableau.append( Categorie( nom, ID ) )
+        return -1
+    
+    """
+    @param alternative Objet Alternative
+    """
+    def ajouter_alternative( self, alternative ) :
+        index_cat = self.cat_existe( alternative.ID_cat )
+        
+        if index_cat != None : # Si la catégorie existe déjà
+            self.tableau[index_cat].add_alternative( alternative )
+        else : # Sinon, on la crée
+            index_cat = self.ajouter_categorie( self.obtenir_nom_cat( alternative.ID_cat ), alternative.ID_cat )
+            self.tableau[index_cat].add_alternative( alternative )
+    
+    """
+    Obtenir l'objet Categorie grace à son ID
+    @param id_categorie String
+    """
+    def obtenir_cat ( self, id_categorie ) :
+        for cat in self.tableau :
+            if cat.ID == id_categorie :
+             return cat
 
 
 """
-ETAPE 2 : Construire notre liste des alternatives
+ETAPE 2 : Construire notre BDD des alternatives à partir du CSV
 """
-fichier = open( "catégories.csv" )
-categories = fichier.readlines()
-fichier.close()
-
-for i in range(len(categories)) :
-    categories[i] = categories[i].replace( "\n", "" ).split(';')
-
-def obtenir_nom_cat ( idCategorie ) :
-    for cat in categories :
-        if cat[0] == idCategorie :
-            return cat[1]
+alternatives = Alternatives() # On instancie la class Alternatives une seule fois
 
 
 """
@@ -65,10 +108,11 @@ ETAPE 3 : Construire le "menu"
 """
 menu = ""
 
-for i in range(len(alternatives)) :
-    menu += "<a href=\"#cat-" + alternatives[i][0] + "\">" + obtenir_nom_cat( alternatives[i][0] ) + "</a>"
-    if i < len(alternatives) - 1 :
-        menu += " &bull; "
+for i in range(len(alternatives.categories)) :
+    if alternatives.cat_existe( alternatives.categories[i][0] ) != None : # Si la catégorie est utilisée, sinon ça ne sert à rien
+        menu += "<a href=\"#cat-" + alternatives.categories[i][0] + "\">" + alternatives.categories[i][1] + "</a>"
+        if i < len(alternatives.categories) - 1 :
+            menu += " &bull; "
 
 
 """
@@ -104,25 +148,25 @@ fichier.close()
 
 html = ""
 
-for categorie in categories : # Pour afficher dans l'ordre donné dans "catégories.csv"
-    cat = obtenir_cat( categorie[0] )
+for categorie in alternatives.categories : # Pour afficher dans l'ordre donné dans "catégories.csv"
+    cat = alternatives.obtenir_cat( categorie[0] )
     if cat == None : # C'est que la catégorie n'est pas utilisée
         continue
     
     html_cat = ""
     
-    for alt in cat[1] :
-        temp = template_alt.replace( "{NOM_ALTERNATIVE}", alt[0] )
-        if alt[1] != "" :
-            temp = temp.replace( "{URL_ALTERNATIVE}", alt[1] )
+    for alt in cat.alternatives :
+        temp = template_alt.replace( "{NOM_ALTERNATIVE}", alt.nom )
+        if alt.URL != "" :
+            temp = temp.replace( "{URL_ALTERNATIVE}", alt.URL )
         else :
             temp = temp.replace( "<a href=\"{URL_ALTERNATIVE}\" target=\"_blank\">", "" ).replace( "</a>", "" )
-        temp = temp.replace( "{DESCRIPTION_ALTERNATIVE}", alt[3] )
-        temp = temp.replace( "{DESCRIPTION_SUR_LEUR_PAGE}", get_page_desc( alt[1] ) )
+        temp = temp.replace( "{DESCRIPTION_ALTERNATIVE}", alt.desc )
+        temp = temp.replace( "{DESCRIPTION_SUR_LEUR_PAGE}", get_page_desc( alt.URL ) )
         html_cat += temp
         
-    temp = template_cat.replace( "{CATEGORIE}", obtenir_nom_cat( cat[0] ) )
-    temp = temp.replace( "{ID_CATEGORIE}", "cat-" + cat[0] )
+    temp = template_cat.replace( "{CATEGORIE}", cat.nom )
+    temp = temp.replace( "{ID_CATEGORIE}", "cat-" + cat.ID )
     temp = temp.replace( "{INSERER_ICI_LES_ALTERNATIVES}", html_cat )
     
     html += temp
