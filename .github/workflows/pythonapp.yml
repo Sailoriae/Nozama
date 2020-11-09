@@ -3,8 +3,8 @@ name: Python build to GitHub Pages
 on:
   push:
     branches: [ master ]
-  pull_request:
-    branches: [ master ]
+#  pull_request:
+#    branches: [ master ]
 
 # Source :
 # https://github.com/marketplace/actions/github-pages-action#%EF%B8%8F-static-site-generators-with-python
